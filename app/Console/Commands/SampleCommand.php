@@ -196,7 +196,7 @@ class SampleCommand extends Command
         }
 
         array_unshift($result, $csv_header);
-        //print_r($result);
+        print_r($result);
 
         $f = fopen("${today}.csv", "w");
         stream_filter_prepend($f,'convert.iconv.utf-8/cp932');
