@@ -69,7 +69,7 @@ class SampleCommand extends Command
         //print $p . "\n";
 
 
-        $csv_header = ["会社名", "資本金", "売上高", "代表者", "ホームページ", "メールアドレス", "連絡先"];
+        $csv_header = ["会社名", "代表者", "ホームページ", "メールアドレス", "電話番号", "資本金", "売上高", "連絡先"];
 
         //csv出力前に、表示されるファイルパス、集計件数、条件内容
         $output_result = "条件：業界(b={$b})、職種(j={$j})、勤務地({$pref[$k]})、会社件数：{$tests}件";
@@ -107,8 +107,8 @@ class SampleCommand extends Command
 
                 // 会社名の取得
                 $companys = trim($xpath->query('//h1[@class="ts-h-company-mainTitle"]')->item(0)->nodeValue);
+                $companys = str_replace(array(" "), '', $companys);
                 $company1 = array("会社名" => $companys);
-                $company1 = str_replace(array(" "), '', $company1);
                 //print_r($company1);
 
                 //会社データのラベルの取得
@@ -137,7 +137,7 @@ class SampleCommand extends Command
                 $address = trim($xpath->query('//*[@id="company-data04"]/div[@class="ts-h-company-sentence"]')->item(0)->nodeValue);
 
                 //連絡先の改行削除
-                $address = str_replace(array("\r\n", "\r", "\n","■", " "), '', $address);
+                $address = str_replace(array("\r\n", "\r", "\n", " "), '', $address);
 
                 $address = array("連絡先" => $address);
 
@@ -145,6 +145,11 @@ class SampleCommand extends Command
                 $address2 = trim($xpath->query('//*[@id="company-data04"]/div[@class="ts-h-company-sentence"]')->item(0)->nodeValue);
                 //連絡先の改行削除
                 $address2 = str_replace(array("\r\n", "\r", "\n", " "), '', $address2);
+
+                //連絡先の再取得
+                $address3 = trim($xpath->query('//*[@id="company-data04"]/div[@class="ts-h-company-sentence"]')->item(0)->nodeValue);
+                //連絡先の改行削除
+                $address3 = str_replace(array("\r\n", "\r", "\n", " "), '', $address3);
 
                 //連絡先から企業URLを取得する。
                 preg_match('/(http|https)(：|:)(.*?)(.jp|.com)/', $address2, $match);
@@ -172,7 +177,17 @@ class SampleCommand extends Command
 
                 $address_array = array("メールアドレス" => $email);
 
+                //連絡先から電話番号を取得する。
+                preg_match('/([0-9]{2,4}-[0-9]{2,4}-[0-9]{3,4})/', $address2, $match);
+                $match[0] = (isset($match[0])) ? $match[0] : '';
+                $contact = $match[0];
+
+                //var_dump($contact);
+                $contact_array = array("電話番号" => $contact);
+
+
                 $company = array_merge($array, $address_array);
+                $company = array_merge($company, $contact_array);
                 $company = array_merge($company, $address);
                 $company = array_merge($company1, $company);
                 //var_dump($company);
@@ -192,9 +207,11 @@ class SampleCommand extends Command
                 $companies[] = $company;
                 //var_dump($companies);
                 $result = [];
+
             }
             $result = $result + $companies;
         }
+
         array_unshift($result, $csv_header);
         print_r($result);
 
