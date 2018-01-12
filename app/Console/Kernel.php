@@ -31,7 +31,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('command:name')
                  ->everyMinute()// 追加
                  ->sendOutputTo('C:\Users\admin44\LaravelProjects\TestProject\test.txt');
-
+        TestTsetProject
 
 
     }
