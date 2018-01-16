@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use \DOMDocument;
 use \DOMXpath;
 
@@ -51,7 +52,7 @@ class SampleCommand extends Command
         date_default_timezone_set('Asia/Tokyo');
         $today = date("YmdHis");
 
-        $url = "https://job.rikunabi.com/2018/search/company/result/?isc=r8rcna01262&moduleCd=2&b=83&b=81&b=80&b=82&b=84&b=55&b=56&b=57&b=58&b=59&b=62&b=60&b=65&b=61&b=63&b=64&b=66&b=67&ms=0";
+        $url = "https://job.rikunabi.com/2018/search/company/result/?b=" . $b . "&j=" . $j . "&k=" .$k;
 
         $useragent = "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.1) Gecko/20061204 Firefox/2.0.0.1";
 
@@ -82,7 +83,7 @@ class SampleCommand extends Command
         //会社一覧ページ毎
         for ($i = 1; $i <= $p + 1; $i++) {
 
-            $url = "https://job.rikunabi.com/2018/search/company/result/?isc=r8rcna01262&moduleCd=2&b=83&b=81&b=80&b=82&b=84&b=55&b=56&b=57&b=58&b=59&b=62&b=60&b=65&b=61&b=63&b=64&b=66&b=67&ms=0&pn=" . $i;
+            $url = "https://job.rikunabi.com/2018/search/company/result/?b=" . $b . "&j=" . $j . "&k=" .$k. "&pn=" . $i;
             //print $url . "\n";
 
             $dom = new DOMDocument;
@@ -210,6 +211,29 @@ class SampleCommand extends Command
 
             }
             $result = $result + $companies;
+        }
+
+        // タイムゾーンを世界標準時間（UTC）から東京に変更 ※php.iniで設定可能
+        date_default_timezone_set('Asia/Tokyo');
+
+        // スクレイピングできた結果を登録する
+        foreach($result as $line){
+            var_dump($line["会社名"]);
+
+            // 会社テーブルにデータを追加
+            DB::table('rikunavis')->insertGetId(
+                [
+                    'company_name' => $line["会社名"],
+                    'contact_address' => $line["連絡先"],
+                    'mail_address' => $line["メールアドレス"],
+                    'home_page_url' => $line["ホームページ"],
+                    'ceo' => $line["代表者"],
+                    'capital_stock' => $line["資本金"],
+                    'sales' => $line["売上高"],
+                    'created_at'   => date("Y-m-d H:i:s"),
+                    'updated_at'   => date("Y-m-d H:i:s")
+                ]
+            );
         }
 
         array_unshift($result, $csv_header);
