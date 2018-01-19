@@ -1,7 +1,9 @@
 <?php
+
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+
 class CreateEmploymentSitesTable extends Migration
 {
     /**
@@ -12,12 +14,25 @@ class CreateEmploymentSitesTable extends Migration
     public function up()
     {
         Schema::create('employment_sites', function (Blueprint $table) {
-            // カラム名設定
-            $table->increments('employment_site_id');
+
+            //------------------------------------------
+            // 就職サイト情報を管理するテーブル
+            //------------------------------------------
+
+            // カラム設定
+            $table->char('employment_site_id', 3);
             $table->string('site_name', 100)->nullable();
-            $table->timestamps();
+            $table->timestamps();                         // 登録日時、更新日時
+
+            // 主キーの設定
+            $table->primary('employment_site_id');
+
+            // インデックスの設定
+            $table->index('employment_site_id');
+
         });
     }
+
     /**
      * Reverse the migrations.
      *

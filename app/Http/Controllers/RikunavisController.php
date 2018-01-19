@@ -13,28 +13,20 @@ class RikunavisController extends Controller
     //
     public function index()
     {
-        $rikunavis = Rikunavi::get(["company_name"])->toArray();
+        $data = Rikunavi::get()->toArray();
 
-        return view('rikunavis.index', [
-            'rikunavis' => $rikunavis,
-        ]);
+        return view('rikunavis.index',compact('data'));
 
     }
 
     public function show()
     {
-        $rikunavis = Rikunavi::get(["company_name"])->toArray();
+        $rikunavis = Rikunavi::get(["company_name","ceo"])->toArray();
 
         return view('rikunavis.index', [
             'rikunavis' => $rikunavis,
         ]);
 
-    }
-
-    public function store(Request $request)
-    {
-        $rikunavis = $request;
-        return redirect('rikunavis/show');
     }
 
 }

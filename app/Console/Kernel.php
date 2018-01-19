@@ -16,6 +16,7 @@ class Kernel extends ConsoleKernel
         //
         //\App\Console\Commands\Inspire::class,
         \App\Console\Commands\SampleCommand::class,
+        \App\Console\Commands\Sample2Command::class
     ];
 
     /**
