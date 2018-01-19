@@ -52,7 +52,7 @@ class SampleCommand extends Command
         date_default_timezone_set('Asia/Tokyo');
         $today = date("YmdHis");
 
-        $url = "https://job.rikunabi.com/2018/search/company/result/?b=" . $b . "&j=" . $j . "&k=" .$k;
+        $url = "https://job.rikunabi.com/2018/search/company/result/?isc=r8rcna01262";
 
         $useragent = "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.1) Gecko/20061204 Firefox/2.0.0.1";
 
@@ -70,7 +70,7 @@ class SampleCommand extends Command
         //print $p . "\n";
 
 
-        $csv_header = ["会社名", "代表者", "ホームページ", "メールアドレス", "電話番号", "資本金", "売上高", "連絡先"];
+        $csv_header = ["会社ID", "サイトID", "会社名", "電話番号", "メールアドレス", "ホームページ", "代表者", "資本金", "売上高", "連絡先"];
 
         //csv出力前に、表示されるファイルパス、集計件数、条件内容
         $output_result = "条件：業界(b={$b})、職種(j={$j})、勤務地({$pref[$k]})、会社件数：{$tests}件";
@@ -83,7 +83,7 @@ class SampleCommand extends Command
         //会社一覧ページ毎
         for ($i = 1; $i <= $p + 1; $i++) {
 
-            $url = "https://job.rikunabi.com/2018/search/company/result/?b=" . $b . "&j=" . $j . "&k=" .$k. "&pn=" . $i;
+            $url = "https://job.rikunabi.com/2018/search/company/result/?isc=r8rcna01262&pn=" . $i;
             //print $url . "\n";
 
             $dom = new DOMDocument;
@@ -97,13 +97,25 @@ class SampleCommand extends Command
             foreach ($tests as $test) {
                 $link = $test->getAttribute('href');
 
-                $link = "https://job.rikunabi.com" . $link;
+                $company_url = "https://job.rikunabi.com" . $link;
 
+                //会社IDの取得
+                //$linkの必要な箇所だけ取得
+                $paths = explode("/", $link);
+                //print $paths[3]. "\n";
+
+                //会社IDの配列化
+                $company_id = array("会社ID" => $paths[3]);
+                //var_dump($company_id);
+
+                //サイトIDの配列化
+                $employment_site_id = array("サイトID" => "001");
+                //var_dump($employment_site_id);
 
                 $dom = new DOMDocument;
                 $dom->preserveWhiteSpace = false;
                 $dom->formatOutput = true;
-                @$dom->loadHTMLFile($link);
+                @$dom->loadHTMLFile($company_url);
                 $xpath = new DOMXPath($dom);
 
                 // 会社名の取得
@@ -186,11 +198,12 @@ class SampleCommand extends Command
                 //var_dump($contact);
                 $contact_array = array("電話番号" => $contact);
 
-
                 $company = array_merge($array, $address_array);
                 $company = array_merge($company, $contact_array);
                 $company = array_merge($company, $address);
                 $company = array_merge($company1, $company);
+                $company3 = array_merge($company_id, $employment_site_id);
+                $company = array_merge($company3, $company);
                 //var_dump($company);
 
                 $_company = [];
@@ -210,6 +223,15 @@ class SampleCommand extends Command
                 $result = [];
 
             }
+
+            //重複する各ページの広告PRの会社データを削除
+            if (isset($xpath->query('//span[@class="search-cassette-prLabel"]')->item(0)->nodeValue)  === false) {
+                //echo "PRなし". "\n";
+            } else {
+                $delete = array_shift($companies);
+                var_dump($delete);
+            }
+
             $result = $result + $companies;
         }
 
