@@ -3,10 +3,11 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use \DOMDocument;
 use \DOMXpath;
 
-class SampleCommand extends Command
+class sampleCommand extends Command
 {
     /**
      * The name and signature of the console command.
@@ -51,7 +52,7 @@ class SampleCommand extends Command
         date_default_timezone_set('Asia/Tokyo');
         $today = date("YmdHis");
 
-        $url = "https://job.rikunabi.com/2018/search/company/result/?isc=r8rcna01262&moduleCd=2&b=83&b=81&b=80&b=82&b=84&b=55&b=56&b=57&b=58&b=59&b=62&b=60&b=65&b=61&b=63&b=64&b=66&b=67&ms=0";
+        $url = "https://job.rikunabi.com/2018/search/company/result/?isc=r8rcna01262";
 
         $useragent = "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.1) Gecko/20061204 Firefox/2.0.0.1";
 
@@ -69,7 +70,7 @@ class SampleCommand extends Command
         //print $p . "\n";
 
 
-        $csv_header = ["会社名", "代表者", "ホームページ", "メールアドレス", "電話番号", "資本金", "売上高", "連絡先"];
+        $csv_header = ["会社ID", "サイトID", "会社名", "電話番号", "メールアドレス", "ホームページ", "代表者", "資本金", "売上高", "連絡先"];
 
         //csv出力前に、表示されるファイルパス、集計件数、条件内容
         $output_result = "条件：業界(b={$b})、職種(j={$j})、勤務地({$pref[$k]})、会社件数：{$tests}件";
@@ -79,11 +80,13 @@ class SampleCommand extends Command
         $output_result = preg_replace("/(})/", "", $output_result);
         echo $output_result;
 
-        //会社一覧ページ毎
-        for ($i = 1; $i <= $p + 1; $i++) {
+        $result = [];
 
-            $url = "https://job.rikunabi.com/2018/search/company/result/?isc=r8rcna01262&moduleCd=2&b=83&b=81&b=80&b=82&b=84&b=55&b=56&b=57&b=58&b=59&b=62&b=60&b=65&b=61&b=63&b=64&b=66&b=67&ms=0&pn=" . $i;
-            //print $url . "\n";
+        //会社一覧ページ毎
+        for ($i = 1; $i <= $p+1; $i++) {
+
+            $url = "https://job.rikunabi.com/2018/search/company/result/?isc=r8rcna01262&pn=" .$i;
+            print $url . "\n";
 
             $dom = new DOMDocument;
             $dom->preserveWhiteSpace = false;
@@ -93,16 +96,34 @@ class SampleCommand extends Command
 
             $tests = $xpath->query('//div[@class="search-cassette-title"]/a');
 
+            //PR広告表示確認
+            $PR = $xpath->query('//span[@class="search-cassette-prLabel"]')->item(0)->nodeValue;
+            //echo $PR. "\n";
+
+            $companies = [];
+
             foreach ($tests as $test) {
                 $link = $test->getAttribute('href');
 
-                $link = "https://job.rikunabi.com" . $link;
+                $company_url = "https://job.rikunabi.com" . $link;
 
+                //会社IDの取得
+                //$linkの必要な箇所だけ取得
+                $paths = explode("/", $link);
+                //print $paths[3]. "\n";
+
+                //会社IDの配列化
+                $company_id = array("会社ID" => "001".$paths[3]);
+                //var_dump($company_id);
+
+                //サイトIDの配列化
+                $employment_site_id = array("サイトID" => "001");
+                //var_dump($employment_site_id);
 
                 $dom = new DOMDocument;
                 $dom->preserveWhiteSpace = false;
                 $dom->formatOutput = true;
-                @$dom->loadHTMLFile($link);
+                @$dom->loadHTMLFile($company_url);
                 $xpath = new DOMXPath($dom);
 
                 // 会社名の取得
@@ -185,11 +206,12 @@ class SampleCommand extends Command
                 //var_dump($contact);
                 $contact_array = array("電話番号" => $contact);
 
-
                 $company = array_merge($array, $address_array);
                 $company = array_merge($company, $contact_array);
                 $company = array_merge($company, $address);
                 $company = array_merge($company1, $company);
+                $company3 = array_merge($company_id, $employment_site_id);
+                $company = array_merge($company3, $company);
                 //var_dump($company);
 
                 $_company = [];
@@ -204,17 +226,29 @@ class SampleCommand extends Command
 
                 $company = $_company;
                 //var_dump($company);
+
+                //1ページ分の会社データ
                 $companies[] = $company;
                 //var_dump($companies);
-                $result = [];
 
             }
-            $result = $result + $companies;
+
+            //重複する各ページの広告PRの会社データを削除
+            if (isset($PR)  === false){
+                //echo "PRなし". "\n";
+            } else {
+                $delete = array_shift($companies);
+                //var_dump($delete);
+            }
+
+            $result = array_merge($result, $companies);
+            //var_dump($result);
         }
 
-        array_unshift($result, $csv_header);
-        print_r($result);
+        // タイムゾーンを世界標準時間（UTC）から東京に変更 ※php.iniで設定可能
+        date_default_timezone_set('Asia/Tokyo');
 
+        //CSVファイル作成
         $f = fopen("${today}.csv", "w");
         stream_filter_prepend($f, 'convert.iconv.utf-8/cp932');
         // 正常にファイルを開くことができていれば、書き込みます。
@@ -228,5 +262,32 @@ class SampleCommand extends Command
         }
         // ファイルを閉じます。
         fclose($f);
+
+        // スクレイピングできた結果を登録する
+        foreach($result as $line){
+            var_dump($line["会社名"]);
+
+            // 会社テーブルにデータを追加
+            DB::table('companies')->insert(
+                [
+                    'company_id' => $line["会社ID"],
+                    'employment_site_id' => $line["サイトID"],
+                    'company_name' => $line["会社名"],
+                    'phone_number' => $line["電話番号"],
+                    'mail_address' => $line["メールアドレス"],
+                    'home_page_url' => $line["ホームページ"],
+                    'ceo' => $line["代表者"],
+                    'capital_stock' => $line["資本金"],
+                    'sales' => $line["売上高"],
+                    'created_at'   => date("Y-m-d H:i:s"),
+                    'updated_at'   => date("Y-m-d H:i:s")
+                ]
+            );
+        }
+        //["会社ID", "サイトID", "会社名", "電話番号", "メールアドレス", "ホームページ", "代表者", "資本金", "売上高"];
+
+        //array_unshift($result, $csv_header);
+        //print_r($result);
+
     }
 }

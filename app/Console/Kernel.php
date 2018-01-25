@@ -15,7 +15,12 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         //
         //\App\Console\Commands\Inspire::class,
-        \App\Console\Commands\SampleCommand::class,
+        \App\Console\Commands\sampleCommand::class,
+        \App\Console\Commands\largeIndustries::class,
+        \App\Console\Commands\smallIndustries::class,
+        \App\Console\Commands\workLocationRegions::class,
+        \App\Console\Commands\largeJob::class,
+        \App\Console\Commands\smallJob::class,
     ];
 
     /**
@@ -31,7 +36,6 @@ class Kernel extends ConsoleKernel
         $schedule->command('command:name')
                  ->everyMinute()// 追加
                  ->sendOutputTo('C:\Users\admin44\LaravelProjects\TestProject\test.txt');
-        TestTsetProject
 
 
     }
