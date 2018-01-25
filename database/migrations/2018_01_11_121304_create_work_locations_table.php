@@ -41,8 +41,8 @@ class CreateWorkLocationsTable extends Migration
         // 作成したCreate文を実行する
         DB::statement($runSqlString);
 
-        /*
-        // 通常パターンの書き方
+
+        /*// 通常パターンの書き方
         Schema::create('work_locations', function (Blueprint $table) {
 
             //------------------------------------------
@@ -60,11 +60,11 @@ class CreateWorkLocationsTable extends Migration
             $table->primary(['employment_site_id', 'region_id', 'prefecture_id']);
 
             // 外部キーの設定
-            $table->foreign('employment_site_id')->references('employment_site_id')->on('employment_sites');
-            $table->foreign('region_id')->references('region_id')->on('work_location_regions');
+            //$table->foreign('employment_site_id')->references('employment_site_id')->on('employment_sites');
+            //$table->foreign('region_id')->references('region_id')->on('work_location_regions');
 
-        });
-        */
+        });*/
+
     }
 
     /**

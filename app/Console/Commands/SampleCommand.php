@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 use \DOMDocument;
 use \DOMXpath;
 
-class SampleCommand extends Command
+class sampleCommand extends Command
 {
     /**
      * The name and signature of the console command.
@@ -80,11 +80,13 @@ class SampleCommand extends Command
         $output_result = preg_replace("/(})/", "", $output_result);
         echo $output_result;
 
-        //会社一覧ページ毎
-        for ($i = 1; $i <= $p + 1; $i++) {
+        $result = [];
 
-            $url = "https://job.rikunabi.com/2018/search/company/result/?isc=r8rcna01262&pn=" . $i;
-            //print $url . "\n";
+        //会社一覧ページ毎
+        for ($i = 1; $i <= $p+1; $i++) {
+
+            $url = "https://job.rikunabi.com/2018/search/company/result/?isc=r8rcna01262&pn=" .$i;
+            print $url . "\n";
 
             $dom = new DOMDocument;
             $dom->preserveWhiteSpace = false;
@@ -93,6 +95,12 @@ class SampleCommand extends Command
             $xpath = new DOMXPath($dom);
 
             $tests = $xpath->query('//div[@class="search-cassette-title"]/a');
+
+            //PR広告表示確認
+            $PR = $xpath->query('//span[@class="search-cassette-prLabel"]')->item(0)->nodeValue;
+            //echo $PR. "\n";
+
+            $companies = [];
 
             foreach ($tests as $test) {
                 $link = $test->getAttribute('href');
@@ -105,7 +113,7 @@ class SampleCommand extends Command
                 //print $paths[3]. "\n";
 
                 //会社IDの配列化
-                $company_id = array("会社ID" => $paths[3]);
+                $company_id = array("会社ID" => "001".$paths[3]);
                 //var_dump($company_id);
 
                 //サイトIDの配列化
@@ -218,49 +226,29 @@ class SampleCommand extends Command
 
                 $company = $_company;
                 //var_dump($company);
+
+                //1ページ分の会社データ
                 $companies[] = $company;
                 //var_dump($companies);
-                $result = [];
 
             }
 
             //重複する各ページの広告PRの会社データを削除
-            if (isset($xpath->query('//span[@class="search-cassette-prLabel"]')->item(0)->nodeValue)  === false) {
+            if (isset($PR)  === false){
                 //echo "PRなし". "\n";
             } else {
                 $delete = array_shift($companies);
-                var_dump($delete);
+                //var_dump($delete);
             }
 
-            $result = $result + $companies;
+            $result = array_merge($result, $companies);
+            //var_dump($result);
         }
 
         // タイムゾーンを世界標準時間（UTC）から東京に変更 ※php.iniで設定可能
         date_default_timezone_set('Asia/Tokyo');
 
-        // スクレイピングできた結果を登録する
-        foreach($result as $line){
-            var_dump($line["会社名"]);
-
-            // 会社テーブルにデータを追加
-            DB::table('rikunavis')->insertGetId(
-                [
-                    'company_name' => $line["会社名"],
-                    'contact_address' => $line["連絡先"],
-                    'mail_address' => $line["メールアドレス"],
-                    'home_page_url' => $line["ホームページ"],
-                    'ceo' => $line["代表者"],
-                    'capital_stock' => $line["資本金"],
-                    'sales' => $line["売上高"],
-                    'created_at'   => date("Y-m-d H:i:s"),
-                    'updated_at'   => date("Y-m-d H:i:s")
-                ]
-            );
-        }
-
-        array_unshift($result, $csv_header);
-        print_r($result);
-
+        //CSVファイル作成
         $f = fopen("${today}.csv", "w");
         stream_filter_prepend($f, 'convert.iconv.utf-8/cp932');
         // 正常にファイルを開くことができていれば、書き込みます。
@@ -274,5 +262,32 @@ class SampleCommand extends Command
         }
         // ファイルを閉じます。
         fclose($f);
+
+        // スクレイピングできた結果を登録する
+        foreach($result as $line){
+            var_dump($line["会社名"]);
+
+            // 会社テーブルにデータを追加
+            DB::table('companies')->insert(
+                [
+                    'company_id' => $line["会社ID"],
+                    'employment_site_id' => $line["サイトID"],
+                    'company_name' => $line["会社名"],
+                    'phone_number' => $line["電話番号"],
+                    'mail_address' => $line["メールアドレス"],
+                    'home_page_url' => $line["ホームページ"],
+                    'ceo' => $line["代表者"],
+                    'capital_stock' => $line["資本金"],
+                    'sales' => $line["売上高"],
+                    'created_at'   => date("Y-m-d H:i:s"),
+                    'updated_at'   => date("Y-m-d H:i:s")
+                ]
+            );
+        }
+        //["会社ID", "サイトID", "会社名", "電話番号", "メールアドレス", "ホームページ", "代表者", "資本金", "売上高"];
+
+        //array_unshift($result, $csv_header);
+        //print_r($result);
+
     }
 }
