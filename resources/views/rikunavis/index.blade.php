@@ -8,7 +8,7 @@
             <dd>
                 <select name="largeIndustries">
                     @foreach($datas as $data)
-                        <option value = "{{$data->large_industries_id}}">{{$data->large_industries_name}}</option>
+                        <option type = "checkbox" value = "{{$data->large_industries_id}}">{{$data->large_industries_name}}</option>
                     @endforeach
                 </select>
             </dd>

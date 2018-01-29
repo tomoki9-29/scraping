@@ -103,7 +103,7 @@ class RikunavisController extends Controller
         $csv = mb_convert_encoding($csv, 'SJIS-win', 'UTF-8');
         $headers = array(
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="users.csv"',
+            'Content-Disposition' => 'attachment; filename="rikunavi.csv"',
         );
         return Response::make($csv, 200, $headers);
 
