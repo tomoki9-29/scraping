@@ -59,6 +59,9 @@ class largeIndustries extends Command
 
             $query = "";
             foreach ($datas as $data) {
+                //var_dump((array)$data);
+                //exit;
+
                 $b = $data->small_industries_id;
                 $query = $query . "&b=" . $b;
             }
